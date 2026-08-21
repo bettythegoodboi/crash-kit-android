@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "903148710090",
+    "project_id": "crashdemo-4f74e",
+    "storage_bucket": "crashdemo-4f74e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:903148710090:android:749f35b4bf8a4aa101ec33",
+        "android_client_info": {
+          "package_name": "com.bettythegoodboi.crashdemo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHEhHuUur0exRGr5AHlGDwZAMoHKRLdwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
