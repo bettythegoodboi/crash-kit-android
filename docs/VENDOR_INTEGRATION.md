@@ -158,12 +158,11 @@ CrashKit.init(
     channel = "official",
     enableCollection = true
 )
-CrashKit.setUserId(stableUserId)
 
 try {
     riskyWork()
 } catch (e: Exception) {
-    CrashKit.recordException(e) // list in console may need U-APM 专业版
+    CrashKit.recordException(e) // console list may need U-APM 专业版
 }
 ```
 
@@ -185,7 +184,7 @@ Privacy off later: do not call CrashKit; next cold start skip `init`.
 |---|---|
 | `init(context, enableCollection)` | Once after consent |
 | `setCollectionEnabled(true/false)` | Privacy on/off |
-| `setUserId(id)` | Label in console |
+| `setUserId(id)` | Label in Crashlytics console |
 | `log(msg)` | Breadcrumb |
 | `setCustomKey(k, v)` | Extra field |
 | `recordException(t)` | Non-fatal |
@@ -195,10 +194,11 @@ Privacy off later: do not call CrashKit; next cold start skip `init`.
 | Call | Use |
 |---|---|
 | `init(context, appKey, channel, enableCollection)` | Once after consent |
-| `recordException(t)` | Custom exception |
-| `setUserId(id)` | Best-effort |
+| `recordException(t)` | Custom exception (console may need U-APM 专业版) |
 
 Uncaught exception = fatal on both.
+
+**China has no `setUserId` / `log` / `setCustomKey` for crash reports.** Do not use those for Umeng.
 
 ---
 
