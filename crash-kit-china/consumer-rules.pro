@@ -1,0 +1,3 @@
+-keep class com.bettythegoodboi.crashkit.** { *; }
+-keep class com.umeng.** { *; }
+-keep class com.uc.** { *; }

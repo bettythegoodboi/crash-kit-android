@@ -1,0 +1,2 @@
+-keep class com.bettythegoodboi.crashkit.** { *; }
+-keep class com.google.firebase.crashlytics.** { *; }
