@@ -12,6 +12,5 @@ class DemoApp : Application() {
             channel = BuildConfig.UMENG_CHANNEL,
             enableCollection = true
         )
-        CrashKit.setUserId("china-demo-user")
     }
 }

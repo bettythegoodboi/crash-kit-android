@@ -6,10 +6,16 @@ import com.umeng.commonsdk.UMConfigure
 import com.umeng.umcrash.UMCrash
 
 /**
- * Production CrashKit — **China** (Umeng U-APM only).
+ * Production CrashKit — China (Umeng U-APM only).
  *
- * Call [init] with Umeng AppKey + channel after privacy consent.
- * Phone must reach errnewlog.umeng.com (China-oriented).
+ * Documented surface:
+ * - [init] → UMConfigure.preInit + UMConfigure.init (crash capture via apm dependency)
+ * - [recordException] → UMCrash.generateCustomLog (console list may require U-APM paid plan)
+ *
+ * Fatal crashes: uncaught exceptions after init; reopen app so report can upload.
+ * Network: device must reach errnewlog.umeng.com (China-oriented).
+ *
+ * No Crashlytics-style setUserId / log / setCustomKey on this backend.
  */
 @Keep
 object CrashKit {
@@ -18,9 +24,9 @@ object CrashKit {
     private var initialized = false
 
     /**
-     * @param appKey Umeng AppKey for the target app
-     * @param channel distribution channel string (e.g. "official")
-     * @param enableCollection when false, still inits structure but you may delay full use until consent
+     * @param appKey Umeng AppKey from owner
+     * @param channel Umeng channel string (e.g. official)
+     * @param enableCollection if false, only preInit; call again with true after consent, or call [init] only after consent
      */
     @JvmStatic
     @JvmOverloads
@@ -30,9 +36,8 @@ object CrashKit {
         channel: String = "default",
         enableCollection: Boolean = true
     ) {
-        if (initialized) return
+        if (initialized && enableCollection) return
         synchronized(this) {
-            if (initialized) return
             val app = context.applicationContext
             UMConfigure.setLogEnabled(false)
             UMConfigure.preInit(app, appKey, channel)
@@ -44,67 +49,20 @@ object CrashKit {
                     UMConfigure.DEVICE_TYPE_PHONE,
                     null
                 )
+                initialized = true
             }
-            initialized = true
         }
     }
 
     /**
-     * After deferred consent: complete Umeng init if [init] was called with enableCollection=false.
-     * For simple apps, prefer [init] with enableCollection=true after consent only.
+     * Non-fatal / custom exception.
+     * Uses UMCrash.generateCustomLog. Viewing in U-APM 自定义异常 may require 专业版.
      */
     @JvmStatic
-    fun setCollectionEnabled(context: Context, appKey: String, channel: String, enabled: Boolean) {
-        if (enabled) {
-            UMConfigure.init(
-                context.applicationContext,
-                appKey,
-                channel,
-                UMConfigure.DEVICE_TYPE_PHONE,
-                null
-            )
-            initialized = true
-        }
-    }
-
-    @JvmStatic
-    fun setUserId(userId: String) {
-        // Umeng account id — best-effort via common profile if available
-        try {
-            val clazz = Class.forName("com.umeng.analytics.MobclickAgent")
-            val method = clazz.getMethod("onProfileSignIn", String::class.java)
-            method.invoke(null, userId)
-        } catch (_: Throwable) {
-            // optional
-        }
-    }
-
-    @JvmStatic
-    fun setCustomKey(key: String, value: String) {
-        // No universal Crashlytics-like key store on free U-APM; no-op safe
-    }
-
-    @JvmStatic
-    fun setCustomKey(key: String, value: Int) {}
-
-    @JvmStatic
-    fun setCustomKey(key: String, value: Boolean) {}
-
-    @JvmStatic
-    fun log(message: String) {
-        // Breadcrumb equivalent not same as Crashlytics on free tier
-    }
-
-    /** Non-fatal / custom exception. Console view may require U-APM 专业版. */
-    @JvmStatic
     fun recordException(throwable: Throwable) {
-        ensureInit()
-        UMCrash.generateCustomLog(throwable, "crash_kit")
-    }
-
-    private fun ensureInit() {
         check(initialized) {
             "CrashKit.init(context, appKey, channel) must be called first."
         }
+        UMCrash.generateCustomLog(throwable, "crash_kit")
     }
 }
