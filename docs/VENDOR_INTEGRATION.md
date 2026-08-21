@@ -1,102 +1,84 @@
 # CrashKit — Vendor Integration Guide
 
-Read in order. Do not skip console access.
+**Class:** `com.bettythegoodboi.crashkit.CrashKit`
 
-**Library class:** `com.bettythegoodboi.crashkit.CrashKit`  
-**Rule:** One region = one AAR. Do **not** put Firebase and Umeng in the same APK.
+Two builds only. **Do not put both AARs in one APK.**
 
-| Region | File vendor must put in the app | Crash backend |
+| Build | AAR file | Backend |
 |---|---|---|
-| Global | `crash-kit-global-release.aar` | Firebase Crashlytics |
-| China | `crash-kit-china-release.aar` | Umeng U-APM |
+| **Global** | `crash-kit-global-release.aar` | Firebase Crashlytics |
+| **China** | `crash-kit-china-release.aar` | Umeng U-APM |
 
-Crash reports go to the **owner’s** Firebase / Umeng project. Vendor **must** get console access (see Phase 0).
+If the product ships both markets → two APKs (or two product flavors), each following the matching section below.
+
+Crash data sits on the **owner’s** Firebase / Umeng project. Vendor **must** have console login (Phase 0).
 
 ---
 
-## Phase 0 — Required accounts (vendor → owner)
+## Phase 0 — Vendor sends owner (required)
 
-Vendor **must** register and send these to the owner. Console access is **required**, not optional.
-
-### Always send
-
-| # | Item | Example |
-|---|---|---|
-| 1 | Android package name (`applicationId`) | `com.vendor.product` |
-| 2 | Region(s) to ship | Global only / China only / both |
-
-### Global (Firebase) — required for console
-
-| # | Item | Rules |
-|---|---|---|
-| 3 | **Google account email** | Gmail or Google Workspace only. Vendor creates/uses this account. Owner adds it to Firebase so vendor can open Crashlytics. |
-
-### China (Umeng) — required for console
-
-| # | Item | Rules |
-|---|---|---|
-| 4 | **Umeng account email / login** used by vendor | Vendor registers at [Umeng](https://www.umeng.com/) if needed. Owner invites this account into the Umeng app/project so vendor can open U-APM 崩溃分析. |
-
-Owner will not finish handoff until package name + the matching console account(s) are received.
-
----
-
-## Phase 1 — Owner prepares files
-
-### Global
-
-1. Firebase → owner project → Add Android app → package name = vendor `applicationId`.
-2. Download file: **`google-services.json`**.
-3. Firebase → Project settings → Users and permissions → Add member → vendor **Google email** → role **Viewer** (or higher if agreed).
-4. Send vendor this package:
-
-| File | What it is |
+| Item | Required when |
 |---|---|
-| `crash-kit-global-release.aar` | Library |
-| `google-services.json` | Firebase binding for **their** package name |
-| `VENDOR_INTEGRATION.md` | This guide |
+| Android `applicationId` (package name) | Always |
+| **Google account email** (Gmail / Google Workspace) | **Global** build — owner adds this to Firebase so vendor can open Crashlytics |
+| **Umeng account** (email / login) | **China** build — owner invites this account so vendor can open U-APM 崩溃分析 |
 
-### China
-
-1. Umeng U-APM → app for this product → copy **AppKey** (string).
-2. Invite vendor **Umeng account** into that app/project (member access so they can open 崩溃分析).
-3. Send vendor this package:
-
-| File / value | What it is |
-|---|---|
-| `crash-kit-china-release.aar` | Library |
-| AppKey string (e.g. in email or `umeng-appkey.txt`) | e.g. `6a71ead6934d206f5852c9ab` |
-| Channel string (if used) | e.g. `official` or `demo` |
-| `VENDOR_INTEGRATION.md` | This guide |
+Vendor registers those accounts if they do not have them yet. Console access is **required**, not optional.
 
 ---
 
-## Phase 2 — Vendor: Global app
+## Phase 1 — Owner sends vendor
 
-### 2.1 Place files
+### Global build
+
+1. Firebase → add Android app with vendor `applicationId`.
+2. Download **`google-services.json`**.
+3. Firebase → Users and permissions → add vendor **Google email** as **Viewer**.
+4. Give vendor:
+
+| File |
+|---|
+| `crash-kit-global-release.aar` |
+| `google-services.json` |
+| This guide |
+
+### China build
+
+1. Umeng U-APM → AppKey for this app.
+2. Invite vendor **Umeng account** (can open 崩溃分析).
+3. Give vendor:
+
+| File / value |
+|---|
+| `crash-kit-china-release.aar` |
+| AppKey string (email or `umeng-appkey.txt`) |
+| Channel string if you use one (e.g. `official`) |
+| This guide |
+
+---
+
+## Phase 2 — Vendor: Global build
+
+### Files
 
 ```text
-your-app/
-  app/
-    google-services.json          ← from owner, do not rename
-    libs/
-      crash-kit-global-release.aar
+app/
+  google-services.json
+  libs/crash-kit-global-release.aar
 ```
 
-In `app/build.gradle.kts`, `applicationId` **must** equal the package inside `google-services.json`.
+`applicationId` must match the package inside `google-services.json`.
 
-### 2.2 Gradle
+### Gradle
 
-Root `build.gradle.kts`:
+Root:
 
 ```kotlin
-plugins {
-    id("com.google.gms.google-services") version "4.4.2" apply false
-    id("com.google.firebase.crashlytics") version "3.0.3" apply false
-}
+id("com.google.gms.google-services") version "4.4.2" apply false
+id("com.google.firebase.crashlytics") version "3.0.3" apply false
 ```
 
-App `app/build.gradle.kts`:
+App:
 
 ```kotlin
 plugins {
@@ -113,53 +95,45 @@ dependencies {
 }
 ```
 
-### 2.3 Code (after user accepts privacy policy)
+### Code (after privacy accept)
 
 ```kotlin
 import com.bettythegoodboi.crashkit.CrashKit
 
-// Application.onCreate or right after consent
 CrashKit.init(this, enableCollection = true)
 CrashKit.setUserId(stableUserId)
+CrashKit.log("app started")
 
-// later
-CrashKit.log("opened checkout")
 try {
     riskyWork()
 } catch (e: Exception) {
     CrashKit.recordException(e)
 }
 
-// if user turns privacy OFF later
+// user turns privacy off later:
 CrashKit.setCollectionEnabled(false)
 ```
 
-### 2.4 Check it worked
+### Verify
 
-1. Install debug build, network on.
-2. Trigger a test fatal crash (uncaught exception).
-3. **Open the app again** (upload is usually on next launch).
-4. Wait a few minutes.
-5. Vendor logs into **Firebase Console** with the Google account from Phase 0 → Crashlytics → select **their package** → see the issue.
+1. Force a fatal crash → **open app again**.
+2. Wait a few minutes.
+3. Vendor login: **Firebase** → Crashlytics → their package → see the issue.
 
 ---
 
-## Phase 3 — Vendor: China app
+## Phase 3 — Vendor: China build
 
-### 3.1 Place files
+### Files
 
 ```text
-your-app/
-  app/
-    libs/
-      crash-kit-china-release.aar
+app/
+  libs/crash-kit-china-release.aar
 ```
 
-No `google-services.json` for China.
+No `google-services.json`. Put AppKey in code or BuildConfig.
 
-Keep AppKey from owner in code or BuildConfig (not a Firebase file).
-
-### 3.2 Gradle
+### Gradle
 
 ```kotlin
 dependencies {
@@ -167,7 +141,7 @@ dependencies {
 }
 ```
 
-Project must resolve Maven Central. If Umeng classes are missing, add:
+If Umeng classes missing, add:
 
 ```kotlin
 implementation("com.umeng.umsdk:common:9.9.1")
@@ -175,15 +149,13 @@ implementation("com.umeng.umsdk:asms:1.8.7.2")
 implementation("com.umeng.umsdk:apm:2.0.8")
 ```
 
-### 3.3 Code (after user accepts privacy policy)
+### Code (after privacy accept)
 
 ```kotlin
-import com.bettythegoodboi.crashkit.CrashKit
-
 CrashKit.init(
     context = this,
-    appKey = "PASTE_APPKEY_FROM_OWNER",
-    channel = "official",   // or string owner gave you
+    appKey = "APPKEY_FROM_OWNER",
+    channel = "official",
     enableCollection = true
 )
 CrashKit.setUserId(stableUserId)
@@ -191,87 +163,73 @@ CrashKit.setUserId(stableUserId)
 try {
     riskyWork()
 } catch (e: Exception) {
-    CrashKit.recordException(e)  // console list may need U-APM 专业版
+    CrashKit.recordException(e) // list in console may need U-APM 专业版
 }
 ```
 
-If user turns privacy OFF: do not call CrashKit; on next cold start do not call `init`.
+Privacy off later: do not call CrashKit; next cold start skip `init`.
 
-### 3.4 Check it worked
+### Verify
 
-1. Phone can open `https://errnewlog.umeng.com` (China-oriented network).
-2. Trigger fatal crash → **open app again**.
-3. Wait several minutes.
-4. Vendor logs into **Umeng U-APM** with the account from Phase 0 → select the app → **崩溃分析** → see the crash.
-
----
-
-## Phase 4 — Both regions in one product
-
-Build **two** variants (product flavors or two apps):
-
-| Variant | AAR file | Other file / value |
-|---|---|---|
-| global | `crash-kit-global-release.aar` | `app/google-services.json` |
-| china | `crash-kit-china-release.aar` | AppKey string from owner |
+1. Network can reach `https://errnewlog.umeng.com`.
+2. Force fatal → **open app again**.
+3. Vendor login: **Umeng U-APM** → **崩溃分析** → see the crash.
 
 ---
 
-## API summary
+## API
 
-### Global AAR
+### Global (`crash-kit-global-release.aar`)
 
-| Call | Meaning |
+| Call | Use |
 |---|---|
-| `CrashKit.init(context, enableCollection)` | Start; call once after consent |
-| `CrashKit.setCollectionEnabled(false/true)` | Stop or resume upload |
-| `CrashKit.setUserId(id)` | Label in console |
-| `CrashKit.log(msg)` | Breadcrumb |
-| `CrashKit.setCustomKey(k, v)` | Extra field |
-| `CrashKit.recordException(t)` | Non-fatal |
+| `init(context, enableCollection)` | Once after consent |
+| `setCollectionEnabled(true/false)` | Privacy on/off |
+| `setUserId(id)` | Label in console |
+| `log(msg)` | Breadcrumb |
+| `setCustomKey(k, v)` | Extra field |
+| `recordException(t)` | Non-fatal |
 
-### China AAR
+### China (`crash-kit-china-release.aar`)
 
-| Call | Meaning |
+| Call | Use |
 |---|---|
-| `CrashKit.init(context, appKey, channel, enableCollection)` | Start; call once after consent |
-| `CrashKit.recordException(t)` | Custom exception (view may need paid U-APM) |
-| `CrashKit.setUserId(id)` | Best-effort |
+| `init(context, appKey, channel, enableCollection)` | Once after consent |
+| `recordException(t)` | Custom exception |
+| `setUserId(id)` | Best-effort |
 
-Uncaught exceptions = fatal reports on both.
+Uncaught exception = fatal on both.
 
 ---
 
 ## Checklist
 
-### Vendor sends owner
+**Vendor → owner**
 
 - [ ] `applicationId`
-- [ ] Region(s)
-- [ ] **Google email** (if Global) — for Firebase access
-- [ ] **Umeng account** (if China) — for U-APM access
+- [ ] Google email (Global)
+- [ ] Umeng account (China)
 
-### Owner sends vendor
+**Owner → vendor**
 
-- [ ] Correct `.aar` file(s)
-- [ ] Global: `google-services.json`
-- [ ] China: AppKey (+ channel if any)
+- [ ] Matching `.aar`
+- [ ] Global: `google-services.json` + Firebase Viewer invite
+- [ ] China: AppKey (+ channel) + Umeng invite
 - [ ] This guide
-- [ ] Console invite done (Firebase Viewer / Umeng member)
 
-### Vendor before release
+**Vendor before ship**
 
-- [ ] Files in the paths above
-- [ ] `CrashKit.init` only after privacy accept
-- [ ] Fatal test visible in **vendor’s own** console login
-- [ ] No mix of both AARs in one APK
+- [ ] Files in paths above
+- [ ] `init` only after privacy accept
+- [ ] Fatal test visible under **vendor’s** console login
+- [ ] One AAR per APK
 
 ---
 
-## If something fails, send owner
+## Failure report to owner
 
-- Region: global or china  
+- Global or China  
 - `applicationId`  
-- App version name / code  
-- Whether fatal was tested and app was reopened  
-- Screenshot from **your** Firebase or U-APM login  
+- App version  
+- Fatal tested + app reopened?  
+- Screenshot from **your** Firebase or U-APM  
