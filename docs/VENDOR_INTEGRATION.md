@@ -11,19 +11,19 @@ Two builds only. **Do not put both AARs in one APK.**
 
 If the product ships both markets → two APKs (or two product flavors), each following the matching section below.
 
-Crash data sits on the **owner’s** Firebase / Umeng project. Vendor **must** have console login (Phase 0).
+Crash data sits on the **owner’s** Firebase / Umeng project. Vendor must have console login (Phase 0).
 
 ---
 
-## Phase 0 — Vendor sends owner (required)
+## Phase 0 — Vendor sends owner
 
-| Item | Required when |
+| Item | When |
 |---|---|
 | Android `applicationId` (package name) | Always |
-| **Google account email** (Gmail / Google Workspace) | **Global** build — owner adds this to Firebase so vendor can open Crashlytics |
-| **Umeng account** (email / login) | **China** build — owner invites this account so vendor can open U-APM 崩溃分析 |
+| **Google account email** (Gmail / Google Workspace) | **Global** — owner adds it to Firebase so vendor can open Crashlytics |
+| **Umeng account** (email / login) | **China** — owner invites it so vendor can open U-APM 崩溃分析 |
 
-Vendor registers those accounts if they do not have them yet. Console access is **required**, not optional.
+If vendor has no Google / Umeng login yet, register first, then send the account to owner.
 
 ---
 
