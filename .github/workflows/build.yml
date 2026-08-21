@@ -1,0 +1,53 @@
+name: Build CrashKit AARs and demos
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build all
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          if [ -f gradlew ]; then
+            ./gradlew :crash-kit-global:assembleRelease :crash-kit-china:assembleRelease :demo-global:assembleDebug :demo-china:assembleDebug --stacktrace
+          else
+            gradle :crash-kit-global:assembleRelease :crash-kit-china:assembleRelease :demo-global:assembleDebug :demo-china:assembleDebug --stacktrace
+          fi
+
+      - name: Upload global AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-kit-global-release-aar
+          path: crash-kit-global/build/outputs/aar/*.aar
+
+      - name: Upload china AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-kit-china-release-aar
+          path: crash-kit-china/build/outputs/aar/*.aar
+
+      - name: Upload global demo APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-global-debug-apk
+          path: demo-global/build/outputs/apk/debug/*.apk
+
+      - name: Upload china demo APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-china-debug-apk
+          path: demo-china/build/outputs/apk/debug/*.apk
